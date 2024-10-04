@@ -9,8 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI()
-
-# Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,14 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Mount the 'frontend' folder to serve static files
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
-
-# Jinja2 template instance for rendering HTML templates
 templates = Jinja2Templates(directory="templates")
-
-# Load the models
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 tokenizer = RobertaTokenizer.from_pretrained("deepset/roberta-base-squad2")
@@ -48,20 +40,14 @@ def answer_question(question: str, context: str) -> str:
 
     answer = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][start_idx:end_idx]))
     return answer
-
-# Route for rendering the HTML frontend
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-# Endpoint for caption generation
 @app.post("/generate-caption")
 async def generate_caption_endpoint(image: UploadFile = File(...)):
     image = Image.open(image.file)
     caption = generate_caption(image)
     return {"caption": caption}
-
-# Endpoint for answering a question based on context
 @app.post("/answer-question")
 async def answer_question_endpoint(question: str = Form(...), context: str = Form(...)):
     answer = answer_question(question, context)
